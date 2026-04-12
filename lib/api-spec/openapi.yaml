@@ -1,22 +1,26 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: ROHEAD OFFICIAL API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: public
+    description: Public streaming platform operations
+  - name: admin
+    description: Admin control center operations
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +28,627 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /auth/status:
+    get:
+      operationId: getAuthStatus
+      tags: [auth]
+      summary: Check setup/auth status
+      responses:
+        "200":
+          description: Auth status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthStatus"
+  /auth/signup:
+    post:
+      operationId: signup
+      tags: [auth]
+      summary: Create the first admin account when setup is incomplete
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthCredentials"
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthCredentials"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current authenticated user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+  /public/home:
+    get:
+      operationId: getPublicHome
+      tags: [public]
+      summary: Public home payload with settings and featured media
+      responses:
+        "200":
+          description: Home content
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HomePayload"
+  /public/music:
+    get:
+      operationId: listPublicMusic
+      tags: [public]
+      summary: List public music
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 24
+      responses:
+        "200":
+          description: Music list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Music"
+  /public/videos:
+    get:
+      operationId: listPublicVideos
+      tags: [public]
+      summary: List public videos
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 24
+      responses:
+        "200":
+          description: Video list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Video"
+  /admin/dashboard:
+    get:
+      operationId: getAdminDashboard
+      tags: [admin]
+      summary: Admin analytics summary
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+  /admin/settings:
+    get:
+      operationId: getAdminSettings
+      tags: [admin]
+      summary: Get editable site settings
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteSettings"
+    patch:
+      operationId: updateAdminSettings
+      tags: [admin]
+      summary: Update site settings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSettingsInput"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteSettings"
+  /admin/music:
+    get:
+      operationId: listAdminMusic
+      tags: [admin]
+      summary: List music for admin management
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Music list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Music"
+    post:
+      operationId: createAdminMusic
+      tags: [admin]
+      summary: Create music item
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MediaMusicInput"
+      responses:
+        "201":
+          description: Created music
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Music"
+  /admin/music/{id}:
+    patch:
+      operationId: updateAdminMusic
+      tags: [admin]
+      summary: Update music item
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MediaMusicInput"
+      responses:
+        "200":
+          description: Updated music
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Music"
+    delete:
+      operationId: deleteAdminMusic
+      tags: [admin]
+      summary: Delete music item
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Deleted
+  /admin/videos:
+    get:
+      operationId: listAdminVideos
+      tags: [admin]
+      summary: List videos for admin management
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Video list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Video"
+    post:
+      operationId: createAdminVideo
+      tags: [admin]
+      summary: Create video item
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MediaVideoInput"
+      responses:
+        "201":
+          description: Created video
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Video"
+  /admin/videos/{id}:
+    patch:
+      operationId: updateAdminVideo
+      tags: [admin]
+      summary: Update video item
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MediaVideoInput"
+      responses:
+        "200":
+          description: Updated video
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Video"
+    delete:
+      operationId: deleteAdminVideo
+      tags: [admin]
+      summary: Delete video item
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Deleted
+  /admin/users:
+    get:
+      operationId: listAdminUsers
+      tags: [admin]
+      summary: List users
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+    post:
+      operationId: createAdminUser
+      tags: [admin]
+      summary: Create user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserInput"
+      responses:
+        "201":
+          description: Created user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+  /admin/users/{id}:
+    patch:
+      operationId: updateAdminUser
+      tags: [admin]
+      summary: Update user role and permissions
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserInput"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    delete:
+      operationId: deleteAdminUser
+      tags: [admin]
+      summary: Delete user
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Deleted
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    IdParam:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: integer
   schemas:
     HealthStatus:
       type: object
       properties:
         status:
           type: string
-      required:
-        - status
-
+      required: [status]
+    AuthStatus:
+      type: object
+      properties:
+        hasAdmin:
+          type: boolean
+        signupEnabled:
+          type: boolean
+      required: [hasAdmin, signupEnabled]
+    AuthCredentials:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+      required: [email, password]
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+      required: [token, user]
+    Permissions:
+      type: object
+      properties:
+        canUploadMusic:
+          type: boolean
+        canUploadVideo:
+          type: boolean
+        canEditSite:
+          type: boolean
+        canDeleteContent:
+          type: boolean
+        canManageUsers:
+          type: boolean
+      required: [canUploadMusic, canUploadVideo, canEditSite, canDeleteContent, canManageUsers]
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        role:
+          type: string
+          enum: [admin, moderator, user]
+        permissions:
+          $ref: "#/components/schemas/Permissions"
+        createdAt:
+          type: string
+      required: [id, email, role, permissions, createdAt]
+    SiteSettings:
+      type: object
+      properties:
+        id:
+          type: integer
+        siteName:
+          type: string
+        description:
+          type: string
+        bannerUrl:
+          type: string
+        profileImageUrl:
+          type: string
+        aboutText:
+          type: string
+        footerText:
+          type: string
+        defaultTheme:
+          type: string
+          enum: [light, dark, ocean, purple, pink, red]
+        publicSignupEnabled:
+          type: boolean
+        updatedAt:
+          type: string
+      required: [id, siteName, description, bannerUrl, profileImageUrl, aboutText, footerText, defaultTheme, publicSignupEnabled, updatedAt]
+    UpdateSettingsInput:
+      type: object
+      properties:
+        siteName:
+          type: string
+        description:
+          type: string
+        bannerUrl:
+          type: string
+        profileImageUrl:
+          type: string
+        aboutText:
+          type: string
+        footerText:
+          type: string
+        defaultTheme:
+          type: string
+          enum: [light, dark, ocean, purple, pink, red]
+        publicSignupEnabled:
+          type: boolean
+    Music:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        coverImage:
+          type: string
+        embedLink:
+          type: string
+        genre:
+          type: string
+        artist:
+          type: string
+        producer:
+          type: string
+        featured:
+          type: boolean
+        createdAt:
+          type: string
+      required: [id, title, description, coverImage, embedLink, genre, artist, producer, featured, createdAt]
+    MediaMusicInput:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        coverImage:
+          type: string
+        embedLink:
+          type: string
+        genre:
+          type: string
+        artist:
+          type: string
+        producer:
+          type: string
+        featured:
+          type: boolean
+      required: [title, description, coverImage, embedLink, genre, artist, producer, featured]
+    Video:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        thumbnail:
+          type: string
+        videoLink:
+          type: string
+        featured:
+          type: boolean
+        trending:
+          type: boolean
+        createdAt:
+          type: string
+      required: [id, title, description, thumbnail, videoLink, featured, trending, createdAt]
+    MediaVideoInput:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        thumbnail:
+          type: string
+        videoLink:
+          type: string
+        featured:
+          type: boolean
+        trending:
+          type: boolean
+      required: [title, description, thumbnail, videoLink, featured, trending]
+    CreateUserInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        role:
+          type: string
+          enum: [admin, moderator, user]
+        permissions:
+          $ref: "#/components/schemas/Permissions"
+      required: [email, password, role, permissions]
+    UpdateUserInput:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [admin, moderator, user]
+        permissions:
+          $ref: "#/components/schemas/Permissions"
+    DashboardSummary:
+      type: object
+      properties:
+        totalUsers:
+          type: integer
+        totalMusic:
+          type: integer
+        totalVideos:
+          type: integer
+        featuredMusic:
+          type: integer
+        trendingVideos:
+          type: integer
+        recentActivity:
+          type: array
+          items:
+            type: string
+      required: [totalUsers, totalMusic, totalVideos, featuredMusic, trendingVideos, recentActivity]
+    HomePayload:
+      type: object
+      properties:
+        settings:
+          $ref: "#/components/schemas/SiteSettings"
+        featuredMusic:
+          type: array
+          items:
+            $ref: "#/components/schemas/Music"
+        latestVideos:
+          type: array
+          items:
+            $ref: "#/components/schemas/Video"
+        recommendedMusic:
+          type: array
+          items:
+            $ref: "#/components/schemas/Music"
+      required: [settings, featuredMusic, latestVideos, recommendedMusic]
